@@ -20,13 +20,17 @@ class FalconPlayerRestAdapter:
     def _do(self, http_method: str, endpoint: str, endpoint_params: Dict = None, data: Dict = None):
         full_url = self.url + endpoint
         headers = {'x-api-key': self._api_key}
-        response = requests.request(
-            method=http_method,
-            url=full_url,
-            verify=self._ssl_verify,
-            headers=headers,
-            params=endpoint_params,
-            timeout=self._request_timeout)
+        try:
+            response = requests.request(
+                method=http_method,
+                url=full_url,
+                verify=self._ssl_verify,
+                headers=headers,
+                params=endpoint_params,
+                timeout=self._request_timeout)
+        except requests.exceptions.RequestException as e:
+            raise FalconPlayerApiException("Request failed") from e
+
         data_out = response.json()
         if 200 <= response.status_code <= 299:  # OK response
             return data_out
@@ -111,3 +115,7 @@ class FalconPlayer:
             "branch": self.branch,
             "mode": self.mode
         }
+
+
+class FalconPlayerApiException(Exception):
+    pass
