@@ -19,7 +19,9 @@ command_options = ['endpoint-list', 'endpoint-detail', 'endpoint-run']
 parser = argparse.ArgumentParser(description='Send Commands to Falcon Pi Player (FPP).')
 parser.add_argument('--ip', help='The IP address of the FPP', required=True)
 parser.add_argument('--command', help='Command to run', choices=command_options, required=True)
-parser.add_argument('--command-params', help='Params to pass for the command')
+parser.add_argument('--command_params', help='Params to pass for the command')
+parser.add_argument('--endpoint_name', help='Used in conjunction with the "endpoint-list" command. '
+                                            'Filters the endpoint list for those matching the entered value')
 parser.add_argument('--timeout', type=int,
                     help='Timeout for command (in seconds)', default=command_timeout_default)
 parser.add_argument('--log', help='File path for log file. Defaults to script folder if omitted')
@@ -36,7 +38,7 @@ logger = logging.getLogger(loggerName)
 
 
 # Functions
-def run_command(player_ip, command, command_timeout):
+def run_command(player_ip, command, command_params, command_timeout):
     # Access the Player
     player = FalconPlayer(player_ip, logger, command_timeout)
 
@@ -45,12 +47,27 @@ def run_command(player_ip, command, command_timeout):
 
     # Perform command action
     if command == "endpoint-list":
-        endpoints = player.get_endpoints()
+        endpoint_list_filter = args.endpoint_name
+        logger.info('Endpoint Name Filter: {}'.format(endpoint_list_filter if endpoint_list_filter else "None"))
+        endpoints = player.get_endpoints(endpoint_list_filter if endpoint_list_filter else "")
+
+        logger.info("=====================")
+        logger.info("Endpoints Found: {}".format(len(endpoints)))
+        logger.info("=====================")
+
         for endpoint in endpoints:
             logger.info(endpoint)
-        #logger.info(player.get_endpoints())
     elif command == "endpoint-detail":
-        logger.info('Show endpoint details not yet implemented')
+        endpoint_name = args.endpoint_name
+        if endpoint_name:
+            endpoint = player.get_endpoint_detail(endpoint_name)
+            if endpoint:
+                logger.info("Endpoint found: {}".format(endpoint))
+                logger.info("Endpoint Params: {}".format(endpoint.params))
+            else:
+                logger.error("No endpoint match found for '{}'".format(endpoint_name))
+        else:
+            logger.error("No endpoint path provided!")
     elif command == "endpoint-run":
         logger.info('Running endpoint query not yet implemented')
     else:
@@ -114,7 +131,8 @@ async def main():
     if command in command_options:
         # Try to run command
         try:
-            run_command(player_ip, command, command_timeout)
+            command_params = args.command_params
+            run_command(player_ip, command, command_params, command_timeout)
         except Exception as e:
             logger.critical('Error: {}'.format(e))
     else:
