@@ -5,21 +5,27 @@ import requests.packages
 import urllib3
 from typing import List, Dict
 
+from urllib3.fields import format_header_param_html5
+
 
 # Class for Falcon Player API endpoints
 class FalconPlayerApiEndpoint:
-    def __init__(self, name: str = "", path: str = "", params: Dict = None, method: str = "GET"):
+    def __init__(self, description: str = "", path: str = "", params: Dict = None, method: str = "GET"):
         """
         Constructor for a Falcon Player API endpoint
-        :param name: The name of the endpoint
+        :param description: The description of the endpoint
         :param path: The path for the endpoint
         :param params: The parameters for the endpoint
         :param method: The HTTP method for the endpoint
         """
-        self.name = name,
+        self.description = description,
         self.path = path,
         self.params = params,
         self.method = method
+
+    def __str__(self):
+        return "Path: {} | Description: {} | Method: {}".format(
+            self.path, self.description, self.method)
 
 
 # Class for Falcon Player API endpoint categories
@@ -33,7 +39,7 @@ class FalconPlayerApiCategory:
         self.endpoints = {}
 
         def add_endpoint(endpoint: FalconPlayerApiEndpoint):
-            self.endpoints[endpoint.name] = endpoint
+            self.endpoints[endpoint.description] = endpoint
 
             return
 
@@ -214,19 +220,28 @@ class FalconPlayer:
         fpp_response = fpp_api.get(fpp_api_endpoint)
 
         # Show response details
-        self.logger.info(fpp_response)
-        #  self.logger.debug(json.dumps(fpp_response))
+        self.logger.debug(fpp_response)
+        # self.logger.debug(json.dumps(fpp_response))
 
         # Set player info
-        response = json.dumps(fpp_response.data)
-        self.logger.info(response)
+        #  response = json.dumps(fpp_response.data)
+        response = fpp_response.data
+        self.logger.debug("Response list length: {}".format(len(response)))
+        self.logger.debug(response)
         self.hostname = response.get("HostName")
+        #  self.hostname = response[0].get("HostName")
         self.description = response.get("HostDescription")
+        #  self.description = response[0].get("Description")
         self.platform = response.get("Platform")
+        #  self.platform = response[0].get("Platform")
         self.variant = response.get("Variant")
+        #  self.variant = response[0].get("Variant")
         self.version = response.get("Version")
+        #  self.version = response[0].get("Version")
         self.branch = response.get("Branch")
+        #  self.branch = response[0].get("Branch")
         self.mode = response.get("Mode")
+        #  self.mode = response[0].get("Mode")
 
         # Log the Player details
         self.logger.info("Falcon Player found at '{}'\n{}".format(
@@ -234,6 +249,31 @@ class FalconPlayer:
             self.to_dict()))
 
         return
+
+    def get_endpoints(self):
+        fpp_api_query = FalconPlayerRestAdapter(hostname=self.ip, timeout=self.timeout, logger=self.logger)
+        fpp_api_endpoint = "endpoints.json"
+
+        fpp_response = fpp_api_query.get(fpp_api_endpoint)
+
+        endpoints = []
+
+        for endpoint in fpp_response.data.get("endpoints"):
+            endpoint_path = endpoint.get("endpoint")
+
+            endpoint_method_keys = endpoint.get("methods").keys()
+            for method in endpoint_method_keys:
+                endpoint_method = endpoint.get("methods").get(method)
+                endpoint_desc = endpoint.get("desc")
+
+                new_endpoint = FalconPlayerApiEndpoint(
+                    description=endpoint_desc,
+                    path=endpoint_path,
+                    method=endpoint_method)
+
+                endpoints.append(new_endpoint)
+
+        return endpoints
 
     def to_dict(self):
         return {

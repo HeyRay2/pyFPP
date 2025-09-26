@@ -1,4 +1,6 @@
 # Import libraries
+from tokenize import endpats
+
 from fpp_classes import FalconPlayer
 import argparse  # argument parsing
 import asyncio
@@ -10,12 +12,14 @@ from pathlib import Path  # Path functions
 command_timeout_default = 3
 
 # List of valid device command options
-command_options = ['stop-playlist', 'start-playlist', 'reset', 'info']
+#  command_options = ['stop-playlist', 'start-playlist', 'reset', 'info']
+command_options = ['endpoint-list', 'endpoint-detail', 'endpoint-run']
 
 # CMD Line Parser
 parser = argparse.ArgumentParser(description='Send Commands to Falcon Pi Player (FPP).')
 parser.add_argument('--ip', help='The IP address of the FPP', required=True)
 parser.add_argument('--command', help='Command to run', choices=command_options, required=True)
+parser.add_argument('--command-params', help='Params to pass for the command')
 parser.add_argument('--timeout', type=int,
                     help='Timeout for command (in seconds)', default=command_timeout_default)
 parser.add_argument('--log', help='File path for log file. Defaults to script folder if omitted')
@@ -40,14 +44,15 @@ def run_command(player_ip, command, command_timeout):
     logger.info('Command: {}'.format(command))
 
     # Perform command action
-    if command == "stop-playlist":
-        logger.info('Stopping playlist')
-    elif command == "start-playlist":
-        logger.info('Starting playlist')
-    elif command == "reset":
-        logger.info('Resetting playlist')
-    elif command == "info":
-        logger.info('Getting info')
+    if command == "endpoint-list":
+        endpoints = player.get_endpoints()
+        for endpoint in endpoints:
+            logger.info(endpoint)
+        #logger.info(player.get_endpoints())
+    elif command == "endpoint-detail":
+        logger.info('Show endpoint details not yet implemented')
+    elif command == "endpoint-run":
+        logger.info('Running endpoint query not yet implemented')
     else:
         logger.critical('Unknown or unsupported command: {}'.format(command))
 
