@@ -1,10 +1,47 @@
 import json
 import logging
-
 import requests
 import requests.packages
 import urllib3
 from typing import List, Dict
+
+
+# Class for Falcon Player API endpoints
+class FalconPlayerApiEndpoint:
+    def __init__(self, name: str = "", path: str = "", params: Dict = None, method: str = "GET"):
+        """
+        Constructor for a Falcon Player API endpoint
+        :param name: The name of the endpoint
+        :param path: The path for the endpoint
+        :param params: The parameters for the endpoint
+        :param method: The HTTP method for the endpoint
+        """
+        self.name = name,
+        self.path = path,
+        self.params = params,
+        self.method = method
+
+
+# Class for Falcon Player API endpoint categories
+class FalconPlayerApiCategory:
+    def __init__(self, name: str = ""):
+        """
+        Constructor for a Falcon Player API endpoint category
+        :param name: The name of endpoint category
+        """
+        self.name = name
+        self.endpoints = {}
+
+        def add_endpoint(endpoint: FalconPlayerApiEndpoint):
+            self.endpoints[endpoint.name] = endpoint
+
+            return
+
+        def get_endpoint(endpoint_name: str = ""):
+            try:
+                return self.endpoints[endpoint_name]
+            except Exception as e:
+                raise FalconPlayerApiException("Error retrieving endpoint") from e
 
 
 # Class for responses from the Falcon Player API
