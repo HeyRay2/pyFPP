@@ -1,7 +1,7 @@
 # Import libraries
 from tokenize import endpats
 
-from fpp_classes import FalconPlayer
+from fpp_classes import FalconPlayer, FalconPlayerRestAdapter, System
 import argparse  # argument parsing
 import asyncio
 import re  # regex
@@ -40,7 +40,10 @@ logger = logging.getLogger(loggerName)
 # Functions
 def run_command(player_ip, command, command_params, command_timeout):
     # Access the Player
-    player = FalconPlayer(player_ip, logger, command_timeout)
+    player = FalconPlayer.connect(player_ip, command_timeout, logger)
+
+    # Show Falcon Player system details
+    logger.info(player)
 
     # Run command on target Falcon Player
     logger.info('Command: {}'.format(command))
@@ -60,10 +63,19 @@ def run_command(player_ip, command, command_params, command_timeout):
     elif command == "endpoint-detail":
         endpoint_name = args.endpoint_name
         if endpoint_name:
-            endpoint = player.get_endpoint_detail(endpoint_name)
-            if endpoint:
-                logger.info("Endpoint found: {}".format(endpoint))
-                logger.info("Endpoint Params: {}".format(endpoint.params))
+            endpoints = player.get_endpoint_detail(endpoint_name)
+
+            if endpoints:
+                logger.info("=====================")
+                logger.info("Endpoints Found: {}".format(len(endpoints)))
+                logger.info("=====================")
+
+                for endpoint in endpoints:
+                    logger.info(endpoint)
+                    logger.info("Params: {}".format(endpoint.params))
+
+                # logger.info("Endpoint found: {}".format(endpoint))
+                # logger.info("Endpoint Params: {}".format(endpoint.params))
             else:
                 logger.error("No endpoint match found for '{}'".format(endpoint_name))
         else:

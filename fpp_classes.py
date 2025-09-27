@@ -4,9 +4,60 @@ import requests
 import requests.packages
 import urllib3
 from typing import List, Dict
-
 from urllib3.fields import format_header_param_html5
 
+# Class for Media Object
+class Media:
+    Free: int
+    Total: int
+
+# Class for Disk Object
+class Disk:
+    Media: Media
+    Root: Media
+
+# Class for Utilization object
+class Utilization:
+    CPU: float
+    Memory: float
+    Uptime: str
+    Disk: Disk
+
+# Class for System object
+class System:
+    HostName: str
+    HostDescription: str
+    Platform: str
+    Variant: str
+    SubPlatform: str
+    backgroundColor: str
+    Mode: str
+    Logo: str
+    Version: str
+    Branch: str
+    multisync: bool
+    OSVersion: str
+    OSRelease: str
+    channelRanges: str
+    majorVersion: int
+    minorVersion: int
+    typeId: int
+    uuid: str
+    Utilization: Utilization
+    Kernel: str
+    LocalGitVersion: str
+    RemoteGitVersion: str
+    UpgradeSource: str
+    IPs: List[str]
+
+    def __init__(self, **kwargs):
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
+    def __str__(self):
+        return ("IPs: {} | Name: {} | Description: {} | Platform: {} ({}) | Version: {} | Mode: {}".format(
+            " , ".join(self.IPs), self.HostName, self.HostDescription, self.Platform, self.Variant, self.Version, self.Mode
+        ))
 
 # Class for Falcon Player API endpoints
 class FalconPlayerApiEndpoint:
@@ -53,6 +104,12 @@ class FalconPlayerApiCategory:
 # Class for responses from the Falcon Player API
 class FalconPlayerApiResult:
     def __init__(self, status_code: int, message: str = '', data: List[Dict] = None):
+        """
+        Constructor for a Falcon Player API result. Wraps elements of a request.response object
+        :param status_code: The status code of the response
+        :param message: The message of the response
+        :param data: The data returned from the response
+        """
         self.status_code = int(status_code)
         self.message = str(message)
         self.data = data if data else []
@@ -192,58 +249,48 @@ class FalconPlayerRestAdapter:
             data=data)
 
 
+
 # Class for Falcon Player
 class FalconPlayer:
-    def __init__(self, ip, logger, timeout) -> None:
+    def __init__(self, ip: str, system: System, timeout: int = None, logger: logging.Logger = None) -> None:
+        """
+        Constructor for the FalconPlayer class
+        :param ip: IP address or hostname of the Falcon Player
+        :param system: System object for the details of the Falcon Player
+        :param timeout: (optional) Timeout, in seconds, for the request
+        :param logger: (optional) Pass an existing logger to the constructor
+        """
         self.ip = ip
-        self.logger = logger
+        self.system = system
         self.timeout = timeout
-        self.hostname = None
-        self.description = None
-        self.platform = None
-        self.variant = None
-        self.version = None
-        self.branch = None
-        self.mode = None
+        self.logger = logger or logging.getLogger(__name__)
 
-        # Connect to Falcon Player
-        self.__connect()
-
-    def __connect(self):
-        fpp_api = FalconPlayerRestAdapter(hostname=self.ip, timeout=self.timeout, logger=self.logger)
+    @staticmethod
+    def connect(ip: str, timeout: int = None, logger: logging.Logger = None):
+        """
+        Static method to create a new FalconPlayer instance
+        :param ip: IP address or hostname of the Falcon Player
+        :param timeout: (optional) Timeout, in seconds, for the request
+        :param logger: (optional) Pass an existing logger to the constructor
+        :return: FalconPlayer instance
+        """
+        fpp_api = FalconPlayerRestAdapter(hostname=ip, timeout=timeout, logger=logger)
         fpp_api_endpoint = "system/info"
 
-        self.logger.info("Querying for Falcon Player at '{}{}'".format(
+        logger.debug("Querying for Falcon Player at '{}{}'".format(
             fpp_api.url,
             fpp_api_endpoint))
 
         fpp_response = fpp_api.get(fpp_api_endpoint)
 
-        # Show response details
-        #  self.logger.debug(fpp_response)
-        # self.logger.debug(json.dumps(fpp_response))
-
-        # Set player info
-        #  response = json.dumps(fpp_response.data)
-        response = fpp_response.data
-        #  self.logger.debug("Response list length: {}".format(len(response)))
-        #  self.logger.debug(response)
-        self.hostname = response.get("HostName")
-        self.description = response.get("HostDescription")
-        self.platform = response.get("Platform")
-        self.variant = response.get("Variant")
-        self.version = response.get("Version")
-        self.branch = response.get("Branch")
-        self.mode = response.get("Mode")
-
-        # Log the Player details
-        self.logger.info("Falcon Player found at '{}'\n{}".format(
-            self.ip,
-            self.to_dict()))
-
-        return
+        return FalconPlayer(ip=ip, system=System(**fpp_response.data), timeout=timeout, logger=logger)
 
     def get_endpoints(self, endpoint_filter: str = ""):
+        """
+        Method to get all endpoints for the Falcon Player API
+        :param endpoint_filter: String to filter endpoints on. Defaults to empty string.
+        :return: List of endpoints
+        """
         fpp_api_query = FalconPlayerRestAdapter(hostname=self.ip, timeout=self.timeout, logger=self.logger)
         fpp_api_endpoint = "endpoints.json"
 
@@ -251,25 +298,16 @@ class FalconPlayer:
 
         endpoints = []
 
-        # self.logger.debug("FPP Response Type: {} | Length: {}".format(
-        #     type(fpp_response.data), len(fpp_response.data))
-        # )
-
-        #  for endpoint in fpp_response.data.get("endpoints"):
         for endpoint in fpp_response.data["endpoints"]:
-            #  endpoint_path = endpoint.get("endpoint")
             endpoint_path = endpoint["endpoint"]
 
             if str(endpoint_path).find(endpoint_filter) >= 0:
-                #  self.logger.debug("Endpoint Path: {}".format(endpoint_path))
+                self.logger.debug("Endpoint Path: {}".format(endpoint_path))
 
-                #  endpoint_method_keys = endpoint.get("methods").keys()
                 endpoint_method_keys = endpoint["methods"].keys()
-                #  self.logger.debug("Methods for {}: {}".format(endpoint_path, endpoint_method_keys))
+                self.logger.debug("Methods for {}: {}".format(endpoint_path, endpoint_method_keys))
 
                 for method_key in endpoint_method_keys:
-                    #  self.logger.debug("Current method: {}".format(method_key))
-                    #  endpoint_desc = endpoint.get("methods").get(method_key).get("desc")
                     endpoint_desc = endpoint["methods"][method_key]["desc"]
 
                     new_endpoint = FalconPlayerApiEndpoint(
@@ -279,32 +317,24 @@ class FalconPlayer:
 
                     endpoints.append(new_endpoint)
 
-                    #  self.logger.debug("Endpoint added: {}".format(new_endpoint))`
+                    self.logger.debug("Endpoint added: {}".format(new_endpoint))
 
         return endpoints
 
     def get_endpoint_detail(self, endpoint_path):
-        endpoints = self.get_endpoints()
+        """
+        Method to get details for endpoints in the Falcon Player API that match the given path
+        :param endpoint_path: The endpoint path
+        :return: FalconPlayerApiEndpoint object
+        """
+        self.logger.debug("Getting details for endpoint: {}".format(endpoint_path))
 
-        self.logger.debug("Searching for endpoint: {}".format(endpoint_path))
-        # for endpoint in endpoints:
-        #     # self.logger.debug("Path from CMD Line: {} | Current Endpoint Path: {}".format(
-        #     #     endpoint_path, endpoint.path))
-        #
-        #     if endpoint_path == endpoint.path:
-        #         return endpoint
+        # Get endpoints that match the search filter
+        endpoints = self.get_endpoints(endpoint_filter=endpoint_path)
 
-        matching_endpoint = [endpoint for endpoint in endpoints if endpoint.path == endpoint_path]
+        matching_endpoints = [endpoint for endpoint in endpoints if endpoint.path == endpoint_path]
 
-        return matching_endpoint[0] if len(matching_endpoint) > 0 else None
+        return matching_endpoints if len(matching_endpoints) > 0 else None
 
-    def to_dict(self):
-        return {
-            "hostname": self.hostname,
-            "description": self.description,
-            "platform": self.platform,
-            "variant": self.variant,
-            "version": self.version,
-            "branch": self.branch,
-            "mode": self.mode
-        }
+    def __str__(self):
+        return "{}".format(self.system)
