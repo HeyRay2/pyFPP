@@ -22,6 +22,12 @@ parser.add_argument('--command', help='Command to run', choices=command_options,
 parser.add_argument('--command_params', help='Params to pass for the command')
 parser.add_argument('--endpoint_name', help='Used in conjunction with the "endpoint-list" command. '
                                             'Filters the endpoint list for those matching the entered value')
+parser.add_argument('--endpoint_params', help='Used in conjunction with the "endpoint-run" command. '
+                                            'Passes parameters to the endpoint')
+parser.add_argument('--endpoint_data', help='Used in conjunction with the "endpoint-run" command. '
+                                            'Passes data to the endpoint')
+parser.add_argument('--endpoint_method', help='HTTP method to use for the endpoint-run command',
+                    default='GET', choices=['GET', 'POST', 'DELETE'])
 parser.add_argument('--timeout', type=int,
                     help='Timeout for command (in seconds)', default=command_timeout_default)
 parser.add_argument('--log', help='File path for log file. Defaults to script folder if omitted')
@@ -73,15 +79,18 @@ def run_command(player_ip, command, command_params, command_timeout):
                 for endpoint in endpoints:
                     logger.info(endpoint)
                     logger.info("Params: {}".format(endpoint.params))
-
-                # logger.info("Endpoint found: {}".format(endpoint))
-                # logger.info("Endpoint Params: {}".format(endpoint.params))
             else:
                 logger.error("No endpoint match found for '{}'".format(endpoint_name))
         else:
             logger.error("No endpoint path provided!")
     elif command == "endpoint-run":
-        logger.info('Running endpoint query not yet implemented')
+        endpoint_run_result = player.run_endpoint(args.endpoint_name, args.endpoint_params,
+                                                  args.endpoint_data, args.endpoint_method)
+
+        logger.info("Endpoint run status: {} - {}".format(
+            endpoint_run_result.status_code, endpoint_run_result.message))
+        logger.info("Endpoint run result: {}".format(endpoint_run_result.data))
+        # logger.info('Running endpoint query not yet implemented')
     else:
         logger.critical('Unknown or unsupported command: {}'.format(command))
 

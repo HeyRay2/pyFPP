@@ -336,5 +336,23 @@ class FalconPlayer:
 
         return matching_endpoints if len(matching_endpoints) > 0 else None
 
+    def run_endpoint(self, endpoint_path: str, endpoint_params: dict = None, endpoint_data: dict = None,
+                     endpoint_method: str = "GET"):
+        fpp_api_adapter = FalconPlayerRestAdapter(hostname=self.ip, timeout=self.timeout)
+
+        self.logger.info("Endpoint: {} | Method: {} | Params: {}".format(
+            endpoint_path, endpoint_method, endpoint_params))
+
+        if endpoint_method == "GET":
+            fpp_response = fpp_api_adapter.get(endpoint_path, endpoint_params)
+        elif endpoint_method == "POST":
+            fpp_response = fpp_api_adapter.post(endpoint_path, endpoint_params, endpoint_data)
+        elif endpoint_method == "DELETE":
+            fpp_response = fpp_api_adapter.delete(endpoint_path, endpoint_params, endpoint_data)
+        else:
+            raise FalconPlayerApiException("Invalid JSON in response")
+
+        return fpp_response
+
     def __str__(self):
         return "{}".format(self.system)
