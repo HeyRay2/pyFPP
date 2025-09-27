@@ -133,14 +133,13 @@ async def main():
     # Get command timeout
     command_timeout = args.timeout
 
-    # Check for valid IP address
-    if re.match(
-            r"(?:\b(?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\b)\Z",
-            args.ip):
+    # Get IP address
+    player_ip = args.ip
 
-        # Successful match at the start of the string
-        player_ip = args.ip
-    else:
+    # Check for invalid IP address
+    if not re.match(
+            r"(?:\b(?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\b)\Z",
+            player_ip):
         # IP match attempt failed
         logger.critical('Invalid IP Address: {}'.format(args.ip))
         exit()

@@ -6,15 +6,18 @@ import urllib3
 from typing import List, Dict
 from urllib3.fields import format_header_param_html5
 
+
 # Class for Media Object
 class Media:
     Free: int
     Total: int
 
+
 # Class for Disk Object
 class Disk:
     Media: Media
     Root: Media
+
 
 # Class for Utilization object
 class Utilization:
@@ -22,6 +25,7 @@ class Utilization:
     Memory: float
     Uptime: str
     Disk: Disk
+
 
 # Class for System object
 class System:
@@ -56,8 +60,10 @@ class System:
 
     def __str__(self):
         return ("IPs: {} | Name: {} | Description: {} | Platform: {} ({}) | Version: {} | Mode: {}".format(
-            " , ".join(self.IPs), self.HostName, self.HostDescription, self.Platform, self.Variant, self.Version, self.Mode
+            " , ".join(self.IPs), self.HostName, self.HostDescription, self.Platform, self.Variant, self.Version,
+            self.Mode
         ))
+
 
 # Class for Falcon Player API endpoints
 class FalconPlayerApiEndpoint:
@@ -182,12 +188,12 @@ class FalconPlayerRestAdapter:
             self._logger.error(msg=(str(e)))
             raise FalconPlayerApiException("Request failed") from e
 
-        # Deserialize JSON response from the request, catch and raise any exceptions
-        try:
-            data_out = response.json()
-        except (ValueError, json.JSONDecodeError) as e:
-            self._logger.error(msg=log_line_post.format(False, None, e))
-            raise FalconPlayerApiException("Invalid JSON in response") from e
+        # # Deserialize JSON response from the request, catch and raise any exceptions
+        # try:
+        #     data_out = response.json()
+        # except (ValueError, json.JSONDecodeError) as e:
+        #     self._logger.error(msg=log_line_post.format(False, None, e))
+        #     raise FalconPlayerApiException("Invalid JSON in response") from e
 
         # If statue_code is in the "OK" range (200 - 299), return the successful result.
         #  Otherwise, catch and raise any exceptions
@@ -195,6 +201,17 @@ class FalconPlayerRestAdapter:
         log_line = log_line_post.format(is_success, response.status_code, response.reason)
         if is_success:
             self._logger.debug(msg=log_line)
+
+            # Deserialize JSON response from the request.
+            #  If the response cannot be deserialized,
+            #  just return the response text
+            try:
+                data_out = response.json()
+            except (ValueError, json.JSONDecodeError) as e:
+                self._logger.error(msg=log_line_post.format(False, None, e))
+                # raise FalconPlayerApiException("Invalid JSON in response") from e
+                data_out = response.text
+
             return FalconPlayerApiResult(
                 response.status_code,
                 message=response.reason,
@@ -240,14 +257,12 @@ class FalconPlayerRestAdapter:
         :param endpoint_params: (optional) Parameters to pass along with the request
         :param data: (optional) The data payload for the request
         :return: Response from the API endpoint, cast as a FalconPlayerApiResult object
-        :return:
         """
         return self._do(
             http_method='DELETE',
             endpoint=endpoint,
             endpoint_params=endpoint_params,
             data=data)
-
 
 
 # Class for Falcon Player
